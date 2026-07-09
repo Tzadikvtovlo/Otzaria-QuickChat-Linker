@@ -1,6 +1,6 @@
 # Otzaria-QuickChat-Linker
 
-הזרקת כפתור לצאט ישיר בפוסטים של [פורום אוצריא](https://otzaria.org/forum).
+סקריפט Tampermonkey להזרקת כפתור לצאט ישיר בפוסטים של [פורום אוצריא](https://otzaria.org/forum).
 
 נוצר בסיוע צמוד של [gemini](https//gemini.google.com/app).
 
