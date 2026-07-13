@@ -1,5 +1,9 @@
 # Otzaria-QuickChat-Linker
 
+להתקנה לחץ:
+
+https://github.com/Tzadikvtovlo/Otzaria-QuickChat-Linker/raw/refs/heads/main/Tampermonkey.user.js
+
 סקריפט Tampermonkey להזרקת כפתור לצאט ישיר בפוסטים של [פורום אוצריא](https://otzaria.org/forum).
 
 החל מגירסה 2.0, הסקריפט מוסיף תמיכה בתצוגה מקדימה בתוך הצאט לקישורים לפוסטים מהפורום, או מ[פורום מתמחים.טופ](https://mitmachim.top/).
