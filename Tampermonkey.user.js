@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         כפתורי צאט, העתקה, ושמירה להמשך בפורום אוצריא
 // @namespace    http://tampermonkey.net/
-// @version      3.0
+// @version      3.1
 // @description  הזרקת לחצן צ'אט מהיר ליד כל פוסט בפורום אוצריא והדבקת קישור הפוסט אוטומטית, הזרקת כפתורי העתקת קישור וקריאה בהמשך, והוספת רשימת קריאה בסרגל הצד
 // @author       צדיק וטוב לו וההודי של gemini
 // @match        https://otzaria.org/forum/*
@@ -326,7 +326,7 @@
                 saveBtn.innerHTML = `<i class="fa fa-fw ${isSaved ? 'fa-solid' : 'fa-regular'} fa-clock" style="pointer-events: none;"></i>`;
             }
 
-            // כפתור העתקת קישור עם הפיכה לאייקון מלא למשך 10 שניות
+            // כפתור העתקת קישור עם הפיכה לאייקון מלא למשך 5 שניות
             let copyBtn = customToolsWrapper.querySelector('.custom-copy-link-btn');
             if (!copyBtn && pid) {
                 copyBtn = document.createElement('button');
@@ -347,7 +347,7 @@
                         clearTimeout(copyTimer);
                         copyTimer = setTimeout(() => {
                             icon.classList.replace('fa-solid', 'fa-regular');
-                        }, 10000); // 10 שניות
+                        }, 5000); // 5 שניות
                     }
                 });
                 customToolsWrapper.appendChild(copyBtn);
