@@ -1,9 +1,9 @@
 // ==UserScript==
 // @name         כפתורי צאט, העתקה, ושמירה להמשך בפורום אוצריא
 // @namespace    http://tampermonkey.net/
-// @version      3.1
-// @description  הזרקת לחצן צ'אט מהיר ליד כל פוסט בפורום אוצריא והדבקת קישור הפוסט אוטומטית, הזרקת כפתורי העתקת קישור וקריאה בהמשך, והוספת רשימת קריאה בסרגל הצד
-// @author       צדיק וטוב לו וההודי של gemini
+// @version      3.2
+// @description  הזרקת לחצן צ'אט מהיר ליד כל פוסט בפורום אוצריא והדבקת קישור הפוסט אוטומטית, הזרקת כפתורי העתקת קישור וקריאה בהמשך, והוספת רשימת קריאה בסרגל הצד, כולל תמיכה בקישורי נושאים
+// @author       צדיק וטוב לו וההודי של gemini נטפרי
 // @match        https://otzaria.org/forum/*
 // @updateURL    https://raw.githubusercontent.com/Tzadikvtovlo/Otzaria-QuickChat-Linker/main/Tampermonkey.user.js
 // @downloadURL  https://raw.githubusercontent.com/Tzadikvtovlo/Otzaria-QuickChat-Linker/main/Tampermonkey.user.js
@@ -449,7 +449,7 @@
     });
 
     previewPopup.addEventListener('mouseleave', (e) => {
-        if (e.relatedTarget && (e.relatedTarget.closest('a[href*="/post/"]') || sharedPopup.contains(e.relatedTarget))) {
+        if (e.relatedTarget && (e.relatedTarget.closest('a[href*="/post/"], a[href*="/topic/"]') || sharedPopup.contains(e.relatedTarget))) {
             return;
         }
         hideTimeout = setTimeout(() => {
@@ -469,7 +469,7 @@
                !!link.closest('.expanded-chat');
     }
 
-    function fetchPostContent(fullUrl, pid) {
+    function fetchPostContent(fullUrl, id) {
         return new Promise((resolve) => {
             if (activeRequest) {
                 try { activeRequest.abort(); } catch(e){}
@@ -483,7 +483,8 @@
                         const finalUrlToUse = response.finalUrl || fullUrl;
                         const parser = new DOMParser();
                         const doc = parser.parseFromString(response.responseText, 'text/html');
-                        const postContainer = doc.querySelector(`[data-pid="${pid}"]`) || doc.querySelector('[component="post"]');
+                        // אם זה נושא (topic), לא יימצא post-id מתאים, לכן הוא ישתמש ב-fallback של הפוסט הראשון
+                        const postContainer = doc.querySelector(`[data-pid="${id}"]`) || doc.querySelector('[component="post"]');
 
                         let contentEl = null;
                         let author = 'משתמש';
@@ -515,7 +516,7 @@
     }
 
     document.body.addEventListener('mouseover', async (e) => {
-        const link = e.target.closest('a[href*="/post/"]');
+        const link = e.target.closest('a[href*="/post/"], a[href*="/topic/"]');
 
         if (link && link.closest('#shared-popup-container')) {
             return;
@@ -523,17 +524,17 @@
 
         if (!link || !isInsideChat(link)) return;
 
-        const match = link.href.match(/(mitmachim\.top|otzaria\.org).*?\/post\/(\d+)/);
+        const match = link.href.match(/(mitmachim\.top|otzaria\.org).*?\/(?:post|topic)\/(\d+)/);
         if (!match) return;
 
         clearTimeout(hideTimeout);
-        const pid = match[2];
+        const id = match[2];
 
-        if (currentPid === pid && previewPopup.style.display === 'block') {
+        if (currentPid === id && previewPopup.style.display === 'block') {
             return;
         }
 
-        currentPid = pid;
+        currentPid = id;
         const fullUrl = link.href;
 
         previewPopup.innerHTML = '<div style="padding: 10px; text-align: center;"><i class="fa fa-spinner fa-spin"></i> טוען תצוגה מקדימה...</div>';
@@ -572,8 +573,8 @@
 
         updatePosition();
 
-        const data = await fetchPostContent(fullUrl, pid);
-        if (!data || currentPid !== pid) return;
+        const data = await fetchPostContent(fullUrl, id);
+        if (!data || currentPid !== id) return;
 
         previewPopup.innerHTML = `
             <div style="font-weight: bold; color: var(--bs-link-color); margin-bottom: 8px; display: flex; align-items: center; border-bottom: 1px solid var(--bs-border-color); padding-bottom: 5px; position: sticky; top: -12px; background: #ffffff; z-index: 2; margin-top: -12px; padding-top: 12px;">
@@ -587,7 +588,7 @@
     });
 
     document.body.addEventListener('mouseout', (e) => {
-        const link = e.target.closest('a[href*="/post/"]');
+        const link = e.target.closest('a[href*="/post/"], a[href*="/topic/"]');
         if (link && isInsideChat(link)) {
             if (e.relatedTarget && (previewPopup.contains(e.relatedTarget) || sharedPopup.contains(e.relatedTarget))) {
                 return;
