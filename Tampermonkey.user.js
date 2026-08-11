@@ -14,6 +14,7 @@
 // @grant        GM_getValue
 // @connect      mitmachim.top
 // @connect      otzaria.org
+// @connect      bina.top
 // @run-at       document-end
 // ==/UserScript==
 
@@ -524,7 +525,7 @@
 
         if (!link || !isInsideChat(link)) return;
 
-        const match = link.href.match(/(mitmachim\.top|otzaria\.org).*?\/(?:post|topic)\/(\d+)/);
+        const match = link.href.match(/(mitmachim\.top|otzaria\.org|bina\.top).*?\/(?:post|topic)\/(\d+)/);
         if (!match) return;
 
         clearTimeout(hideTimeout);
