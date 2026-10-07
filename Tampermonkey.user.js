@@ -1,12 +1,13 @@
 // ==UserScript==
 // @name         כפתורי צאט, העתקה, ושמירה להמשך בפורום אוצריא
 // @namespace    http://tampermonkey.net/
-// @version      3.3
+// @version      3.4
 // @description  הזרקת לחצן צ'אט מהיר ליד כל פוסט בפורום אוצריא והדבקת קישור הפוסט אוטומטית, הזרקת כפתורי העתקת קישור וקריאה בהמשך, והוספת רשימת קריאה בסרגל הצד, כולל תמיכה בקישורי נושאים
 // @author       צדיק וטוב לו וההודי של gemini נטפרי
 // @match        https://otzaria.org/forum/*
 // @updateURL    https://raw.githubusercontent.com/Tzadikvtovlo/Otzaria-QuickChat-Linker/main/Tampermonkey.user.js
 // @downloadURL  https://raw.githubusercontent.com/Tzadikvtovlo/Otzaria-QuickChat-Linker/main/Tampermonkey.user.js
+// @require      https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.4.16/purify.min.js
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=otzaria.org
 // @grant        unsafeWindow
 // @grant        GM_xmlhttpRequest
@@ -24,6 +25,12 @@
     function getForumBaseUrl() {
         const relativePath = (unsafeWindow.config && unsafeWindow.config.relative_path) || '';
         return window.location.origin + relativePath;
+    }
+
+    function escapeHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str == null ? '' : String(str);
+        return div.innerHTML;
     }
 
     let hideTimeout = null;
@@ -167,8 +174,8 @@
                         <div style="display:flex; align-items:center; gap: 10px;">
                             ${item.avatarHtml || '<div style="width:30px; height:30px; border-radius:50%; background:var(--bs-secondary-bg); display:flex; align-items:center; justify-content:center; color:var(--bs-secondary-color);"><i class="fa fa-user"></i></div>'}
                             <div>
-                                <a href="${fullUrl}" style="font-weight:600; color:var(--bs-link-color); font-size:14px; text-decoration:none; display:-webkit-box; -webkit-line-clamp:1; -webkit-box-orient:vertical; overflow:hidden;" target="_blank">${item.title}</a>
-                                <div style="font-size:11px; color:var(--bs-secondary-color);">נכתב ע"י: <strong>${item.author}</strong></div>
+                                <a href="${fullUrl}" style="font-weight:600; color:var(--bs-link-color); font-size:14px; text-decoration:none; display:-webkit-box; -webkit-line-clamp:1; -webkit-box-orient:vertical; overflow:hidden;" target="_blank">${escapeHtml(item.title)}</a>
+                                <div style="font-size:11px; color:var(--bs-secondary-color);">נכתב ע"י: <strong>${escapeHtml(item.author)}</strong></div>
                             </div>
                         </div>
                         <button class="delete-saved-btn btn btn-sm btn-link text-danger p-0" title="הסר מרשימת קריאה" style="z-index: 2; position: relative; margin-right: 10px;"><i class="fa fa-trash"></i></button>
@@ -376,44 +383,36 @@
                         }, 20000); // 20 שניות
                     }
 
-                    const userLink = post.querySelector('a[data-uid]');
-                    if (!userLink) return;
+                    const { app } = unsafeWindow;
+                    const [api, chat, alerts] = await app.require(['api', 'chat', 'alerts']);
+                    const postUrl = `${getForumBaseUrl()}/post/${pid}`;
 
-                    userLink.dispatchEvent(new PointerEvent('pointerenter', { bubbles: true }));
-                    userLink.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
-                    userLink.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
-
-                    const observer = new MutationObserver(() => {
-                        const popoverId = userLink.getAttribute('aria-describedby');
-                        if (!popoverId) return;
-                        const popover = document.getElementById(popoverId);
-                        if (!popover) return;
-                        const btn = popover.querySelector('[component="account/new-chat"]') ||
-                                    popover.querySelector('[component="account/chat"]') ||
-                                    popover.querySelector('a[href*="/chats"]');
-
-                        if (btn) {
-                            observer.disconnect();
-                            const postUrl = pid ? `${getForumBaseUrl()}/post/${pid}` : window.location.href;
-                            const chatInputObserver = new MutationObserver(() => {
-                                const chatInput = document.querySelector('[component="chat/input"]') || document.querySelector('.chat-input');
-                                if (chatInput) {
-                                    chatInputObserver.disconnect();
-                                    if (!chatInput.value.includes(postUrl)) {
-                                        chatInput.value = postUrl + '\n' + chatInput.value;
-                                        chatInput.dispatchEvent(new Event('input', { bubbles: true }));
-                                        chatInput.dispatchEvent(new Event('change', { bubbles: true }));
-                                        chatInput.focus();
-                                    }
-                                }
-                            });
-                            chatInputObserver.observe(document.body, { childList: true, subtree: true });
-                            setTimeout(() => chatInputObserver.disconnect(), 5000);
-                            btn.click();
+                    const chatInputObserver = new MutationObserver(() => {
+                        const chatInput = document.querySelector('[component="chat/input"]') || document.querySelector('.chat-input');
+                        if (chatInput) {
+                            chatInputObserver.disconnect();
+                            if (!chatInput.value.includes(postUrl)) {
+                                chatInput.value = postUrl + '\n' + chatInput.value;
+                                chatInput.dispatchEvent(new Event('input', { bubbles: true }));
+                                chatInput.dispatchEvent(new Event('change', { bubbles: true }));
+                                chatInput.focus();
+                            }
                         }
                     });
-                    observer.observe(document.body, { childList: true, subtree: true });
-                    setTimeout(() => observer.disconnect(), 5000);
+                    chatInputObserver.observe(document.body, { childList: true, subtree: true });
+                    setTimeout(() => chatInputObserver.disconnect(), 5000);
+
+                    try {
+                        const { roomId } = await api.get(`/users/${encodeURIComponent(postUid)}/chat`);
+                        if (roomId) {
+                            chat.openChat(roomId);
+                        } else {
+                            chat.newChat(postUid);
+                        }
+                    } catch (err) {
+                        chatInputObserver.disconnect();
+                        alerts.error(err);
+                    }
                 });
                 customToolsWrapper.appendChild(chatBtn);
             }
@@ -504,9 +503,9 @@
                         const avatarHtml = cloneAndFormatAvatar(avatarEl, finalUrlToUse, '24px', '12px');
 
                         resolve({
-                            content: contentEl ? contentEl.innerHTML : 'לא ניתן ליצור תצוגה מקדימה של הפוסט כרגע.',
+                            content: contentEl ? DOMPurify.sanitize(contentEl.innerHTML) : 'לא ניתן ליצור תצוגה מקדימה של הפוסט כרגע.',
                             author: author,
-                            avatarHtml: avatarHtml
+                            avatarHtml: DOMPurify.sanitize(avatarHtml)
                         });
                     } catch(e) {
                         resolve({ content: 'שגיאה בפענוח התצוגה המקדימה.', author: 'מערכת', avatarHtml: '' });
@@ -580,7 +579,7 @@
         previewPopup.innerHTML = `
             <div style="font-weight: bold; color: var(--bs-link-color); margin-bottom: 8px; display: flex; align-items: center; border-bottom: 1px solid var(--bs-border-color); padding-bottom: 5px; position: sticky; top: -12px; background: #ffffff; z-index: 2; margin-top: -12px; padding-top: 12px;">
                 ${data.avatarHtml || '<div style="margin-left: 8px; width: 24px; height: 24px; border-radius: 50%; background: #eee; display: flex; align-items: center; justify-content: center;"><i class="fa fa-user" style="font-size: 12px; color: #aaa;"></i></div>'}
-                <span>${data.author}:</span>
+                <span>${escapeHtml(data.author)}:</span>
             </div>
             <div class="post-preview-body" style="font-size: 13px;">${data.content}</div>
         `;
