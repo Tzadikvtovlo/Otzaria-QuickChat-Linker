@@ -1,14 +1,14 @@
 // ==UserScript==
 // @name         כפתורי צאט, העתקה, ושמירה להמשך בפורום אוצריא
 // @namespace    http://tampermonkey.net/
-// @version      3.4
+// @version      3.5
 // @description  הזרקת לחצן צ'אט מהיר ליד כל פוסט בפורום אוצריא והדבקת קישור הפוסט אוטומטית, הזרקת כפתורי העתקת קישור וקריאה בהמשך, והוספת רשימת קריאה בסרגל הצד, כולל תמיכה בקישורי נושאים
 // @author       צדיק וטוב לו וההודי של gemini נטפרי
 // @match        https://otzaria.org/forum/*
 // @updateURL    https://raw.githubusercontent.com/Tzadikvtovlo/Otzaria-QuickChat-Linker/main/Tampermonkey.user.js
 // @downloadURL  https://raw.githubusercontent.com/Tzadikvtovlo/Otzaria-QuickChat-Linker/main/Tampermonkey.user.js
 // @require      https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.4.16/purify.min.js
-// @icon         https://www.google.com/s2/favicons?sz=64&domain=otzaria.org
+// @icon         https://www.google.com/s2/favicons?sz=256&domain=otzaria.org
 // @grant        unsafeWindow
 // @grant        GM_xmlhttpRequest
 // @grant        GM_setValue
